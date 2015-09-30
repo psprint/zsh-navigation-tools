@@ -1,29 +1,83 @@
 #!/bin/zsh
 
-local PLUGIN_FILE="doc/zshnavigationtools.plugin.zsh"
+# Abort on any error, to make sure we don't silently generate a 
+# broken plugin
+set -e
 
-[ -d doc ] || cd ..
+# Make sure we're running from the root of the project directory
+THIS_DIR=${0:h:A}
+PROJECT_ROOT=${THIS_DIR:h}
+cd $PROJECT_ROOT
 
-rm -vf "$PLUGIN_FILE"
-echo "# The preamble comments apply when using ZNT as autoload functions" >>"$PLUGIN_FILE"
-echo "# https://github.com/psprint/zsh-navigation-tools" >>"$PLUGIN_FILE"
-echo "# License is GPLv3" >>"$PLUGIN_FILE"
-echo -n "# " >>"$PLUGIN_FILE"
-git show-ref master | head -1 >>"$PLUGIN_FILE"
-echo >>"$PLUGIN_FILE"
+# Generate a full Oh My Zsh plugin directory structure
+PLUGIN_DIR="build/zshnavigationtools"
+PLUGIN_FILE="$PLUGIN_DIR/zshnavigationtools.plugin.zsh"
+if [[ -e $PLUGIN_DIR ]]; then
+    rm -rf $PLUGIN_DIR
+fi
+mkdir -p $PLUGIN_DIR
 
-for i in n-*(on); do
-    echo "$i() {" >>"$PLUGIN_FILE"
-    cat "$i" >>"$PLUGIN_FILE"
-    echo "}" >>"$PLUGIN_FILE"
-    echo "alias n${i#n-}=$i" >>"$PLUGIN_FILE"
-    echo >>"$PLUGIN_FILE"
+# Combine functions into a single file
+
+# Plugin-specific header
+ZNT_COMMIT_ID=$(git show-ref master | head -1)
+echo "Generating $PLUGIN_FILE"
+cat >>$PLUGIN_FILE <<END
+# Zsh Navigation Tools
+#
+# https://github.com/psprint/zsh-navigation-tools"
+#
+# License is GPLv3
+#
+# This plugin is auto-generated from the upstream ZNT project.
+# ZNT version: $ZNT_COMMIT_ID
+
+END
+
+# Append function files
+# Using sed to indent the function bodies for readability
+
+# Append n-* files
+# The first 3 lines of each file are preambles about autoloading, and
+# are not relevant in preamble form, so they're stripped.
+# Last 2 lines are vim modelines; so strip those too
+for fcn in n-*(on); do
+    fcn_body=$(cat $fcn | sed '$d' | sed '1,3d' | sed 's/^/    /')
+    cat >>$PLUGIN_FILE <<END
+function $fcn() {
+$fcn_body
+}
+alias n${fcn#n-}=$fcn
+
+END
+    echo "Appended $fcn"
 done
 
 # Append znt-* files
-for i in znt-*(on); do
-    echo "$i() {" >>"$PLUGIN_FILE"
-    cat "$i" >>"$PLUGIN_FILE"
-    echo "}" >>"$PLUGIN_FILE"
-    echo >>"$PLUGIN_FILE"
+# No preamble comments on these
+for fcn in znt-*(on); do
+    fcn_body=$(cat $fcn | sed '$d' | sed 's/^/    /')
+    cat >>$PLUGIN_FILE <<END
+function $fcn() {
+$fcn_body
+}
+
+END
+    echo "Appended $fcn"
 done
+
+# Create a plugin-specific README
+
+PLUGIN_README="$PLUGIN_DIR/README.md"
+cat doc/README-plugin-before.md >>$PLUGIN_README
+starting_line=$(grep -n "## Introduction" README.md | cut -d: -f1)
+(( starting_line = starting_line - 1 ))
+sed -n "$starting_line,\$p" README.md >>$PLUGIN_README
+cat doc/README-plugin-after.md >>$PLUGIN_README
+
+# Grab the example config files
+mkdir -p $PLUGIN_DIR/config
+cp -a .config/znt $PLUGIN_DIR/config
+
+echo "Generated plugin at $PLUGIN_DIR"
+

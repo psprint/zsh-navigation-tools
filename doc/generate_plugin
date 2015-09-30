@@ -75,6 +75,10 @@ starting_line=$(grep -n "## Introduction" README.md | cut -d: -f1)
 sed -n "$starting_line,\$p" README.md >>$PLUGIN_README
 cat doc/README-plugin-after.md >>$PLUGIN_README
 
+# Other documentation
+
+cp LICENSE "$PLUGIN_DIR/LICENSE.txt"
+
 # Grab the example config files
 mkdir -p $PLUGIN_DIR/config
 cp -a .config/znt $PLUGIN_DIR/config

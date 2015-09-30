@@ -1,7 +1,7 @@
 # Copy this file into /usr/share/zsh/site-functions/
 # and add 'autoload n-aliases` to .zshrc
 #
-# This function allows to choose an alias for edition with vared
+# This function allows to choose an alias for editing with vared
 #
 # Uses n-list
 

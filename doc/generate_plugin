@@ -17,7 +17,7 @@ if [[ -e $PLUGIN_DIR ]]; then
 fi
 mkdir -p $PLUGIN_DIR
 
-# Combine functions into a single file
+# Create main plugin file
 
 # Plugin-specific header
 ZNT_COMMIT_ID=$(git show-ref master | head -1)
@@ -31,39 +31,20 @@ cat >>$PLUGIN_FILE <<END
 #
 # This plugin is auto-generated from the upstream ZNT project.
 # ZNT version: $ZNT_COMMIT_ID
+#
+# Do not make modifications directly to this plugin. Submit changes to
+# the upstream project, and then re-generate the plugin from upstream.
 
 END
 
-# Append function files
-# Using sed to indent the function bodies for readability
-
-# Append n-* files
-# The first 3 lines of each file are preambles about autoloading, and
-# are not relevant in preamble form, so they're stripped.
-# Last 2 lines are vim modelines; so strip those too
-for fcn in n-*(on); do
-    fcn_body=$(cat $fcn | sed '$d' | sed '1,3d' | sed 's/^/    /')
-    cat >>$PLUGIN_FILE <<END
-function $fcn() {
-$fcn_body
-}
-alias n${fcn#n-}=$fcn
-
-END
-    echo "Appended $fcn"
-done
-
-# Append znt-* files
-# No preamble comments on these
-for fcn in znt-*(on); do
-    fcn_body=$(cat $fcn | sed '$d' | sed 's/^/    /')
-    cat >>$PLUGIN_FILE <<END
-function $fcn() {
-$fcn_body
-}
-
-END
-    echo "Appended $fcn"
+fcns=( n-*(on) znt-*(on) )
+for fcn ( $fcns ); do
+    echo "autoload $fcn" >>$PLUGIN_FILE
+    if [[ $fcn[1] == "n" ]]; then
+        echo "alias n${fcn#n-}=$fcn" >>$PLUGIN_FILE
+    fi
+    # Strip the preamble discussing installation
+    cat $fcn | sed '1,3d' > $PLUGIN_DIR/$fcn
 done
 
 # Create a plugin-specific README

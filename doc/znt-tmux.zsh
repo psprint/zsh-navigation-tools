@@ -16,7 +16,7 @@
 #
 
 # get and save the current active tmux pane id
-active_pane=$(tmux display -p -F ':#{session_id}:#I:#P:#{pane_active}:#{window_active}:#{session_attached}' )
+active_pane=$(tmux display -p -F ':#{session_name}:#I:#P:#{pane_active}:#{window_active}:#{session_attached}' )
 a_active_pane=("${(@s/:/)active_pane}")
 
 active_session=${a_active_pane[2]//$}
@@ -39,7 +39,7 @@ tmux setenv -u -t $active_session:$active_window.$active_pane "ZNT_TMUX_ORIGIN_W
 tmux setenv -u -t $active_session:$active_window.$active_pane "ZNT_TMUX_ORIGIN_PANE"
 
 # znt's session id
-znt_active_pane=$(tmux display -p -F ':#{session_id}:#I:#P:#{pane_active}:#{window_active}:#{session_attached}' )
+znt_active_pane=$(tmux display -p -F ':#{session_name}:#I:#P:#{pane_active}:#{window_active}:#{session_attached}' )
 znt_a_active_pane=("${(@s/:/)znt_active_pane}")
 
 znt_active_session=${znt_a_active_pane[2]//$}
